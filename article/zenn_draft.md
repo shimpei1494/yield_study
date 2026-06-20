@@ -557,7 +557,7 @@ uv run uvicorn examples.09_fastapi_dependency_sample:app --reload
 
 ## contextmanager でも yield が使われる
 
-FastAPI の dependency with `yield` を理解する前に、Python の `contextmanager` を見るとさらに整理しやすいです。
+FastAPI の dependency with `yield` を理解するうえで、Python の `contextmanager` を見るとさらに整理しやすいです。
 
 `with` 文は、前処理と後片付けをまとめて書ける仕組みです。
 
