@@ -381,3 +381,259 @@ uv run python examples/06_pipeline.py
 この理解を土台にすると、実務で出てくる `yield` も読みやすくなります。
 
 次は、ストリーミングレスポンス、FastAPI の dependency、`contextmanager` での `yield` を見ていきます。
+
+## ストリーミングは「少しずつ返す」
+
+ここからは、少し実用寄りの例を見ます。
+
+最近のアプリケーションでは、AI の回答を一度に全部返すのではなく、少しずつ画面に表示することがあります。
+
+たとえば、チャット画面で文章が少しずつ伸びていくような動きです。
+
+まずは FastAPI なしで、考え方だけを小さく見ます。
+
+```python
+import time
+
+
+def fake_ai_tokens():
+    tokens = ["こんにちは", "。", "yield", "で", "少しずつ", "返します", "。"]
+
+    for token in tokens:
+        time.sleep(0.3)
+        yield token
+
+
+for token in fake_ai_tokens():
+    print(token, end="", flush=True)
+```
+
+ここでやっていることは、前半で見たジェネレータと同じです。
+
+- 1つ token を作る
+- `yield` で外に渡す
+- 次に必要になったら続きから動く
+
+AI API とつなぐ場合も、考え方は大きく変わりません。
+
+「AI から chunk が届く」「その chunk を `yield` する」と考えると読みやすくなります。
+
+対応コード:
+
+```sh
+uv run python examples/07_streaming_basic.py
+```
+
+## FastAPI で SSE の形にして返す
+
+ブラウザに少しずつデータを返す方法の1つに SSE があります。
+
+SSE は Server-Sent Events の略で、サーバーからブラウザへ一方向にイベントを流す仕組みです。ブラウザ側では `EventSource` を使って受け取れます。
+
+FastAPI では、`StreamingResponse` にジェネレータを渡すと、レスポンスを少しずつ返せます。
+
+```python
+import time
+
+from fastapi import FastAPI
+from fastapi.responses import HTMLResponse, StreamingResponse
+
+app = FastAPI()
+
+
+def fake_ai_events():
+    tokens = ["こんにちは", "。", "SSE", "で", "少しずつ", "表示します", "。"]
+
+    for token in tokens:
+        yield f"data: {token}\n\n"
+        time.sleep(0.5)
+
+
+@app.get("/")
+def index():
+    return HTMLResponse("""
+    <div id="output"></div>
+    <script>
+      const output = document.getElementById("output");
+      const eventSource = new EventSource("/chat");
+
+      eventSource.onmessage = (event) => {
+        output.textContent += event.data;
+      };
+    </script>
+    """)
+
+
+@app.get("/chat")
+def chat():
+    return StreamingResponse(
+        fake_ai_events(),
+        media_type="text/event-stream",
+    )
+```
+
+SSE では、イベントを次のような形式で送ります。
+
+```text
+data: こんにちは
+
+data: 。
+
+data: SSE
+
+```
+
+各イベントは空行で区切られます。そのため、コードでは `\n\n` を付けています。
+
+ここでも `yield` の役割は同じです。
+
+```text
+yield f"data: {token}\n\n"
+```
+
+この1行によって、「次の token をレスポンスとして外へ渡し、また次の token が必要になるまで待つ」という形になります。
+
+対応コード:
+
+```sh
+uv run uvicorn examples.08_fastapi_sse_sample:app --reload
+```
+
+## FastAPI の dependency で後片付けする
+
+`yield` は、値を少しずつ返す場面だけで使うわけではありません。
+
+FastAPI では、dependency の中で `yield` を使うことがあります。
+
+代表例は、DB セッションのようなリソースを用意して、リクエスト処理後に閉じる場面です。
+
+```python
+from typing import Annotated
+
+from fastapi import Depends, FastAPI
+
+app = FastAPI()
+
+
+class DBSession:
+    def close(self):
+        print("close db session")
+
+
+def get_db():
+    db = DBSession()
+
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+@app.get("/items")
+def list_items(db: Annotated[DBSession, Depends(get_db)]):
+    return {"message": "use db here"}
+```
+
+このコードは、次の順番で動くと考えると分かりやすいです。
+
+1. リクエストが来る
+2. `get_db()` が動く
+3. `DBSession()` を作る
+4. `yield db` でエンドポイントに `db` を渡す
+5. `list_items()` が動く
+6. 処理が終わったあと、`finally` で `db.close()` される
+
+ここでの `yield` は、「値を1つずつ作る」ためではなく、「準備したものを一度外に渡し、あとで後片付けに戻ってくる」ために使われています。
+
+ただし、仕組みとしては前半と同じです。
+
+> `yield` で一時停止し、外側の処理が終わったあと、続きに戻ってくる。
+
+対応コード:
+
+```sh
+uv run uvicorn examples.09_fastapi_dependency_sample:app --reload
+```
+
+## contextmanager でも yield が使われる
+
+FastAPI の dependency with `yield` を理解する前に、Python の `contextmanager` を見るとさらに整理しやすいです。
+
+`with` 文は、前処理と後片付けをまとめて書ける仕組みです。
+
+```python
+from contextlib import contextmanager
+
+
+@contextmanager
+def open_resource():
+    print("setup")
+
+    try:
+        yield "resource"
+    finally:
+        print("cleanup")
+
+
+with open_resource() as resource:
+    print(f"use {resource}")
+```
+
+出力はこうなります。
+
+```text
+setup
+use resource
+cleanup
+```
+
+この場合、`yield` の前後は次の意味になります。
+
+- `yield` の前: `with` ブロックに入る前の準備
+- `yield` した値: `as resource` に入る値
+- `yield` の後: `with` ブロックを抜けるときの後片付け
+
+FastAPI の dependency で `yield` を使う例も、これとかなり似ています。
+
+```text
+準備する
+yield で外に渡す
+後片付けする
+```
+
+対応コード:
+
+```sh
+uv run python examples/10_contextmanager.py
+```
+
+## 実用例まで含めたまとめ
+
+この記事では、`yield` を基礎から実用例まで見てきました。
+
+最初は、次の理解で十分です。
+
+> `yield` は、値を外に渡して、そこで一時停止する。
+> 次に呼ばれると、止まった場所の続きから動く。
+
+そこから、次のように理解を広げられます。
+
+- `next()` されるたびに、次の `yield` まで進む
+- `for` はジェネレータから値を1つずつ取り出している
+- リストと違い、ジェネレータは値を必要な分だけ作れる
+- ストリーミングでは、データを少しずつ返せる
+- FastAPI の dependency では、準備と後片付けを表現できる
+- `contextmanager` では、`with` 文の前後処理を書ける
+
+実務で `yield` を見かけたときは、まずこう問いかけると読みやすくなります。
+
+> この `yield` は、何を外に渡しているのか。
+> そして、あとでどこから再開するのか。
+
+この2つが分かると、`yield` はかなり怖くなくなります。
+
+## 参考
+
+- [FastAPI: Dependencies with yield](https://fastapi.tiangolo.com/tutorial/dependencies/dependencies-with-yield/)
+- [FastAPI: StreamingResponse](https://fastapi.tiangolo.com/advanced/custom-response/#streamingresponse)
+- [MDN: Using server-sent events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events)
