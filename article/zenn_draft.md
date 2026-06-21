@@ -71,6 +71,22 @@ print(gen)
 uv run python examples/01_return_vs_yield.py
 ```
 
+実行結果:
+
+```text
+normal_function() returns:
+1
+
+generator_function() returns:
+<generator object generator_function at ...>
+
+values from the generator:
+1
+2
+```
+
+ジェネレータオブジェクトの末尾に出るアドレスのような部分は、実行するたびに変わります。
+
 ## next() で一歩ずつ動かす
 
 `yield` の動きは、`for` より先に `next()` で見ると分かりやすいです。
@@ -157,6 +173,28 @@ print(next(gen))
 uv run python examples/02_next_step_by_step.py
 ```
 
+実行結果:
+
+```text
+created generator
+
+first next:
+start
+1
+
+second next:
+after 1
+2
+
+third next:
+after 2
+3
+
+fourth next:
+end
+StopIteration: the generator is done
+```
+
 ## for は next() を順番に呼んでいる
 
 普段は、ジェネレータを `next()` で直接扱うより、`for` で回すことが多いです。
@@ -200,6 +238,14 @@ print(next(gen))
 
 ```sh
 uv run python examples/03_for_loop.py
+```
+
+実行結果:
+
+```text
+1
+2
+3
 ```
 
 ## リストは全部作る、ジェネレータは少しずつ作る
@@ -278,6 +324,26 @@ use 3
 uv run python examples/04_list_vs_generator.py
 ```
 
+実行結果:
+
+```text
+list:
+make 1
+make 2
+make 3
+use 1
+use 2
+use 3
+
+generator:
+make 1
+use 1
+make 2
+use 2
+make 3
+use 3
+```
+
 ## ファイルを1行ずつ処理する
 
 実用的な例として、ファイルを1行ずつ読む処理を考えます。
@@ -310,6 +376,15 @@ for line in read_non_empty_lines("data/sample.txt"):
 
 ```sh
 uv run python examples/05_file_reader.py
+```
+
+実行結果:
+
+```text
+apple
+banana
+cherry
+date
 ```
 
 ## ジェネレータで処理をつなぐ
@@ -364,6 +439,14 @@ for value in squared(only_even(numbers())):
 
 ```sh
 uv run python examples/06_pipeline.py
+```
+
+実行結果:
+
+```text
+4
+16
+36
 ```
 
 ## ここまでのまとめ
@@ -423,6 +506,14 @@ AI API とつなぐ場合も、考え方は大きく変わりません。
 ```sh
 uv run python examples/07_streaming_basic.py
 ```
+
+実行結果:
+
+```text
+こんにちは。yieldで少しずつ返します。
+```
+
+実際にターミナルで見ると、文字列が少しずつ表示されます。記事上では最終的な表示結果だけを載せています。
 
 ## FastAPI で SSE の形にして返す
 
@@ -499,6 +590,14 @@ yield f"data: {token}\n\n"
 uv run uvicorn examples.08_fastapi_sse_sample:app --reload
 ```
 
+ブラウザで `http://127.0.0.1:8000` を開くと、最終的には次のように表示されます。
+
+```text
+こんにちは。SSEで少しずつ表示します。
+```
+
+実際の画面では、SSE のイベントを受け取るたびに文字が追記されます。
+
 ## FastAPI の dependency で後片付けする
 
 `yield` は、値を少しずつ返す場面だけで使うわけではありません。
@@ -555,6 +654,18 @@ def list_items(db: Annotated[DBSession, Depends(get_db)]):
 uv run uvicorn examples.09_fastapi_dependency_sample:app --reload
 ```
 
+サーバーを起動して `http://127.0.0.1:8000/items` を開くと、レスポンスは次のようになります。
+
+```json
+{"message":"use db here"}
+```
+
+そのリクエスト処理が終わったあと、ターミナル側には次のように表示されます。
+
+```text
+close db session
+```
+
 ## contextmanager でも yield が使われる
 
 FastAPI の dependency with `yield` を理解するうえで、Python の `contextmanager` を見るとさらに整理しやすいです。
@@ -605,6 +716,14 @@ yield で外に渡す
 
 ```sh
 uv run python examples/10_contextmanager.py
+```
+
+実行結果:
+
+```text
+setup
+use resource
+cleanup
 ```
 
 ## 実用例まで含めたまとめ
