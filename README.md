@@ -20,6 +20,7 @@ examples/
   08_fastapi_sse_sample.py
   09_fastapi_dependency_sample.py
   10_contextmanager.py
+  11_for_iterable_iterator.py
 data/
   sample.txt
 docs/

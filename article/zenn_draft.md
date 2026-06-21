@@ -751,6 +751,170 @@ cleanup
 
 この2つが分かると、`yield` はかなり怖くなくなります。
 
+## 補足: for の in には何を渡せるのか
+
+最後に、`for` について少し補足します。
+
+この記事では、ジェネレータを `for` で回してきました。
+
+```python
+for value in generator_function():
+    print(value)
+```
+
+ただ、普段の Python では、リストや文字列も `for` で回せます。
+
+```python
+for value in [1, 2, 3]:
+    print(value)
+
+for char in "abc":
+    print(char)
+```
+
+では、`for ... in ...` の `in` には何を渡せるのでしょうか。
+
+ざっくり言うと、**イテラブル**を渡せます。
+
+イテラブルとは、「順番に値を取り出せるもの」です。たとえば、次のようなものがあります。
+
+- `list`
+- `tuple`
+- `str`
+- `dict`
+- `set`
+- `range`
+- ジェネレータ
+- ファイルオブジェクト
+
+ここで少しややこしいのが、**イテラブル**と**イテレータ**の違いです。
+
+リストはイテラブルですが、リストそのものはイテレータではありません。
+
+```python
+numbers = [1, 2, 3]
+
+iterator = iter(numbers)
+
+print(next(iterator))
+print(next(iterator))
+print(next(iterator))
+```
+
+出力はこうなります。
+
+```text
+1
+2
+3
+```
+
+`iter(numbers)` によって、リストから値を1つずつ取り出すためのイテレータが作られます。
+
+`for` は、この `iter()` を内部で呼んでいます。
+
+つまり、次のコードは、
+
+```python
+for value in [1, 2, 3]:
+    print(value)
+```
+
+かなり大ざっぱに書くと、次のようなことをしています。
+
+```python
+iterator = iter([1, 2, 3])
+
+while True:
+    try:
+        value = next(iterator)
+    except StopIteration:
+        break
+
+    print(value)
+```
+
+ジェネレータの場合も同じです。
+
+```python
+def count_three():
+    yield 1
+    yield 2
+    yield 3
+
+
+for value in count_three():
+    print(value)
+```
+
+ジェネレータは、それ自体がイテレータとして振る舞います。
+
+```python
+gen = count_three()
+
+print(iter(gen) is gen)
+```
+
+出力はこうなります。
+
+```text
+True
+```
+
+一方、リストは `iter()` すると別のイテレータが作られます。
+
+```python
+numbers = [1, 2, 3]
+
+print(iter(numbers) is numbers)
+```
+
+出力はこうなります。
+
+```text
+False
+```
+
+ここまでをまとめると、こうです。
+
+- `for` の `in` には、イテラブルを渡せる
+- イテラブルは、`iter()` に渡すとイテレータを作れるもの
+- イテレータは、`next()` で値を1つずつ取り出せるもの
+- リストや文字列はイテラブル
+- ジェネレータはイテラブルであり、イテレータでもある
+
+初学者のうちは、まず次の理解で十分です。
+
+> `for` は、渡されたものに `iter()` を使い、できたイテレータから `next()` で値を取り出している。
+
+この見方ができると、リスト、文字列、`range()`、ジェネレータを同じ `for` で扱える理由が見えてきます。
+
+対応コード:
+
+```sh
+uv run python examples/11_for_iterable_iterator.py
+```
+
+実行結果:
+
+```text
+list:
+1
+2
+3
+
+str:
+a
+b
+c
+
+iter(list) is list:
+False
+
+iter(generator) is generator:
+True
+```
+
 ## 参考
 
 - [FastAPI: Dependencies with yield](https://fastapi.tiangolo.com/tutorial/dependencies/dependencies-with-yield/)
