@@ -115,22 +115,6 @@ gen = count_three()
 
 この時点では、まだ `"start"` は表示されません。ジェネレータが作られただけです。
 
-図にすると、`next()` されるたびに次の `yield` まで進み、そこで止まるイメージです。
-
-```mermaid
-flowchart TD
-    A["gen = count_three()"] --> B["まだ関数本体は動かない"]
-    B --> C["next(gen)"]
-    C --> D["start を表示"]
-    D --> E["yield 1 で一時停止"]
-    E --> F["next(gen)"]
-    F --> G["after 1 から再開"]
-    G --> H["yield 2 で一時停止"]
-    H --> I["next(gen)"]
-    I --> J["after 2 から再開"]
-    J --> K["yield 3 で一時停止"]
-```
-
 次に `next()` します。
 
 ```python
