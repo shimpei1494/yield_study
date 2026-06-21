@@ -959,72 +959,13 @@ True
 | Ruby | 別物として考えた方がよい | `yield` はメソッドに渡されたブロックを呼び出す |
 | Rust | 似た発想はあるが、通常は `yield` ではなく `Iterator` を実装する | `next()` で順番に値を返す考え方は近い |
 
-JavaScript には、Python とかなり似た generator function があります。
+覚えておくと便利なのは、次の3つです。
 
-```js
-function* countThree() {
-  yield 1;
-  yield 2;
-  yield 3;
-}
+- JavaScript、C#、PHP の `yield` は、Python と同じく「値を順番に取り出せるようにする」文脈で出てくることが多い。
+- Ruby の `yield` は、Python のジェネレータとは別物として考えた方がよい。
+- Rust のように `yield` という書き方を普段使わなくても、`Iterator` や `next()` のような近い考え方を持つ言語もある。
 
-const gen = countThree();
-
-console.log(gen.next().value); // 1
-console.log(gen.next().value); // 2
-console.log(gen.next().value); // 3
-```
-
-`function*` で generator function を定義し、`yield` で値を外に渡します。`next()` で次の値を取り出すところも Python と似ています。
-
-C# では、`yield return` という形で使います。
-
-```csharp
-IEnumerable<int> CountThree()
-{
-    yield return 1;
-    yield return 2;
-    yield return 3;
-}
-```
-
-Python の `yield 1` に近いですが、C# では `yield return 1` と書きます。
-
-PHP も Python に近く、`yield` を含む関数はジェネレータ関数になります。
-
-```php
-function countThree() {
-    yield 1;
-    yield 2;
-    yield 3;
-}
-
-foreach (countThree() as $value) {
-    echo $value, "\n";
-}
-```
-
-一方で、Ruby の `yield` は注意が必要です。
-
-```ruby
-def greet
-  yield "hello"
-end
-
-greet do |message|
-  puts message
-end
-```
-
-Ruby の `yield` は、メソッドに渡されたブロックを呼び出すためのものです。Python のように「ジェネレータとして値を少しずつ返す」とは別の仕組みです。
-
-このように、`yield` という名前が出てきても、必ずしも Python と同じ意味とは限りません。
-
-ただし、次の考え方は他の言語でも役に立ちます。
-
-> 値を一度に全部返すのではなく、必要になったタイミングで順番に取り出せるようにする。
-
-Python、JavaScript、C#、PHP などでは、この発想がジェネレータやイテレータとして出てきます。別の言語で `yield` や `generator`、`iterator`、`iterable` という言葉を見かけたら、「値を順番に取り出す仕組みの話かもしれない」と考えると読みやすくなります。
+つまり、別の言語で `yield`、`generator`、`iterator`、`iterable` という言葉を見かけたら、「値を一度に全部返すのではなく、必要になったタイミングで順番に取り出す仕組みの話かもしれない」と考えると読みやすくなります。
 
 ## 参考
 
