@@ -945,8 +945,94 @@ True
 
 :::
 
+## 補足: 他の言語にも yield はあるのか
+
+最後に、Python 以外の言語での `yield` についても少しだけ触れておきます。
+
+結論から言うと、他の言語にも `yield` やジェネレータに近い仕組みはあります。ただし、言語によって呼び方や意味が少し違います。
+
+| 言語 | Python の yield に近いか | 呼び方や特徴 |
+| --- | --- | --- |
+| JavaScript | 近い | `function*` で generator function を作り、`yield` で値を返す |
+| C# | 近い | `yield return` で iterator を作る |
+| PHP | 近い | `yield` を含む関数は generator function になる |
+| Ruby | 別物として考えた方がよい | `yield` はメソッドに渡されたブロックを呼び出す |
+| Rust | 似た発想はあるが、通常は `yield` ではなく `Iterator` を実装する | `next()` で順番に値を返す考え方は近い |
+
+JavaScript には、Python とかなり似た generator function があります。
+
+```js
+function* countThree() {
+  yield 1;
+  yield 2;
+  yield 3;
+}
+
+const gen = countThree();
+
+console.log(gen.next().value); // 1
+console.log(gen.next().value); // 2
+console.log(gen.next().value); // 3
+```
+
+`function*` で generator function を定義し、`yield` で値を外に渡します。`next()` で次の値を取り出すところも Python と似ています。
+
+C# では、`yield return` という形で使います。
+
+```csharp
+IEnumerable<int> CountThree()
+{
+    yield return 1;
+    yield return 2;
+    yield return 3;
+}
+```
+
+Python の `yield 1` に近いですが、C# では `yield return 1` と書きます。
+
+PHP も Python に近く、`yield` を含む関数はジェネレータ関数になります。
+
+```php
+function countThree() {
+    yield 1;
+    yield 2;
+    yield 3;
+}
+
+foreach (countThree() as $value) {
+    echo $value, "\n";
+}
+```
+
+一方で、Ruby の `yield` は注意が必要です。
+
+```ruby
+def greet
+  yield "hello"
+end
+
+greet do |message|
+  puts message
+end
+```
+
+Ruby の `yield` は、メソッドに渡されたブロックを呼び出すためのものです。Python のように「ジェネレータとして値を少しずつ返す」とは別の仕組みです。
+
+このように、`yield` という名前が出てきても、必ずしも Python と同じ意味とは限りません。
+
+ただし、次の考え方は他の言語でも役に立ちます。
+
+> 値を一度に全部返すのではなく、必要になったタイミングで順番に取り出せるようにする。
+
+Python、JavaScript、C#、PHP などでは、この発想がジェネレータやイテレータとして出てきます。別の言語で `yield` や `generator`、`iterator`、`iterable` という言葉を見かけたら、「値を順番に取り出す仕組みの話かもしれない」と考えると読みやすくなります。
+
 ## 参考
 
 - [FastAPI: Dependencies with yield](https://fastapi.tiangolo.com/tutorial/dependencies/dependencies-with-yield/)
 - [FastAPI: StreamingResponse](https://fastapi.tiangolo.com/advanced/custom-response/#streamingresponse)
 - [MDN: Using server-sent events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events)
+- [MDN: function*](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function*)
+- [Microsoft Learn: yield statement](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/statements/yield)
+- [PHP Manual: Generator syntax](https://www.php.net/manual/en/language.generators.syntax.php)
+- [Ruby Documentation: Block Argument](https://ruby-doc.org/core-3.0.0/doc/syntax/methods_rdoc.html#label-Block+Argument)
+- [The Rust Programming Language: Processing a Series of Items with Iterators](https://doc.rust-lang.org/book/ch13-02-iterators.html)
