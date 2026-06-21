@@ -71,7 +71,7 @@ print(gen)
 uv run python examples/01_return_vs_yield.py
 ```
 
-実行結果:
+:::details 実行結果を見る
 
 ```text
 normal_function() returns:
@@ -86,6 +86,8 @@ values from the generator:
 ```
 
 ジェネレータオブジェクトの末尾に出るアドレスのような部分は、実行するたびに変わります。
+
+:::
 
 ## next() で一歩ずつ動かす
 
@@ -112,6 +114,22 @@ gen = count_three()
 ```
 
 この時点では、まだ `"start"` は表示されません。ジェネレータが作られただけです。
+
+図にすると、`next()` されるたびに次の `yield` まで進み、そこで止まるイメージです。
+
+```mermaid
+flowchart TD
+    A["gen = count_three()"] --> B["まだ関数本体は動かない"]
+    B --> C["next(gen)"]
+    C --> D["start を表示"]
+    D --> E["yield 1 で一時停止"]
+    E --> F["next(gen)"]
+    F --> G["after 1 から再開"]
+    G --> H["yield 2 で一時停止"]
+    H --> I["next(gen)"]
+    I --> J["after 2 から再開"]
+    J --> K["yield 3 で一時停止"]
+```
 
 次に `next()` します。
 
@@ -173,7 +191,7 @@ print(next(gen))
 uv run python examples/02_next_step_by_step.py
 ```
 
-実行結果:
+:::details 実行結果を見る
 
 ```text
 created generator
@@ -194,6 +212,8 @@ fourth next:
 end
 StopIteration: the generator is done
 ```
+
+:::
 
 ## for は next() を順番に呼んでいる
 
@@ -240,13 +260,15 @@ print(next(gen))
 uv run python examples/03_for_loop.py
 ```
 
-実行結果:
+:::details 実行結果を見る
 
 ```text
 1
 2
 3
 ```
+
+:::
 
 ## リストは全部作る、ジェネレータは少しずつ作る
 
@@ -316,6 +338,19 @@ use 3
 
 ジェネレータ版は「1つ作る」「1つ使う」を交互に行っています。
 
+図にすると、リスト版は先に `make` がまとまっていて、ジェネレータ版は `make` と `use` が交互に進んでいることが分かります。
+
+```mermaid
+flowchart LR
+    subgraph L["list"]
+        L1["make 1"] --> L2["make 2"] --> L3["make 3"] --> L4["use 1"] --> L5["use 2"] --> L6["use 3"]
+    end
+
+    subgraph G["generator"]
+        G1["make 1"] --> G2["use 1"] --> G3["make 2"] --> G4["use 2"] --> G5["make 3"] --> G6["use 3"]
+    end
+```
+
 この違いが、大量データを扱うときに効いてきます。すべてをメモリに載せなくても、必要な分だけ処理できるからです。
 
 対応コード:
@@ -324,7 +359,7 @@ use 3
 uv run python examples/04_list_vs_generator.py
 ```
 
-実行結果:
+:::details 実行結果を見る
 
 ```text
 list:
@@ -343,6 +378,8 @@ use 2
 make 3
 use 3
 ```
+
+:::
 
 ## ファイルを1行ずつ処理する
 
@@ -378,7 +415,7 @@ for line in read_non_empty_lines("data/sample.txt"):
 uv run python examples/05_file_reader.py
 ```
 
-実行結果:
+:::details 実行結果を見る
 
 ```text
 apple
@@ -386,6 +423,8 @@ banana
 cherry
 date
 ```
+
+:::
 
 ## ジェネレータで処理をつなぐ
 
@@ -441,13 +480,15 @@ for value in squared(only_even(numbers())):
 uv run python examples/06_pipeline.py
 ```
 
-実行結果:
+:::details 実行結果を見る
 
 ```text
 4
 16
 36
 ```
+
+:::
 
 ## ここまでのまとめ
 
@@ -507,13 +548,15 @@ AI API とつなぐ場合も、考え方は大きく変わりません。
 uv run python examples/07_streaming_basic.py
 ```
 
-実行結果:
+:::details 実行結果を見る
 
 ```text
 こんにちは。yieldで少しずつ返します。
 ```
 
 実際にターミナルで見ると、文字列が少しずつ表示されます。記事上では最終的な表示結果だけを載せています。
+
+:::
 
 ## FastAPI で SSE の形にして返す
 
@@ -590,6 +633,8 @@ yield f"data: {token}\n\n"
 uv run uvicorn examples.08_fastapi_sse_sample:app --reload
 ```
 
+:::details ブラウザでの表示結果を見る
+
 ブラウザで `http://127.0.0.1:8000` を開くと、最終的には次のように表示されます。
 
 ```text
@@ -597,6 +642,8 @@ uv run uvicorn examples.08_fastapi_sse_sample:app --reload
 ```
 
 実際の画面では、SSE のイベントを受け取るたびに文字が追記されます。
+
+:::
 
 ## FastAPI の dependency で後片付けする
 
@@ -654,6 +701,8 @@ def list_items(db: Annotated[DBSession, Depends(get_db)]):
 uv run uvicorn examples.09_fastapi_dependency_sample:app --reload
 ```
 
+:::details レスポンスと後片付けログを見る
+
 サーバーを起動して `http://127.0.0.1:8000/items` を開くと、レスポンスは次のようになります。
 
 ```json
@@ -665,6 +714,8 @@ uv run uvicorn examples.09_fastapi_dependency_sample:app --reload
 ```text
 close db session
 ```
+
+:::
 
 ## contextmanager でも yield が使われる
 
@@ -718,13 +769,15 @@ yield で外に渡す
 uv run python examples/10_contextmanager.py
 ```
 
-実行結果:
+:::details 実行結果を見る
 
 ```text
 setup
 use resource
 cleanup
 ```
+
+:::
 
 ## 実用例まで含めたまとめ
 
@@ -895,7 +948,7 @@ False
 uv run python examples/11_for_iterable_iterator.py
 ```
 
-実行結果:
+:::details 実行結果を見る
 
 ```text
 list:
@@ -914,6 +967,8 @@ False
 iter(generator) is generator:
 True
 ```
+
+:::
 
 ## 参考
 
